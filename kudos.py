@@ -6,7 +6,7 @@ from datetime import datetime
 from playwright.sync_api import sync_playwright
 
 from strava_kudos import config
-from strava_kudos.bot import give_kudos, open_dashboard
+from strava_kudos.bot import build_context, give_kudos, open_dashboard
 
 
 def main() -> int:
@@ -19,23 +19,14 @@ def main() -> int:
         return 1
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=config.HEADLESS)
-        context = browser.new_context(
-            storage_state=config.AUTH_FILE,
-            viewport={"width": 1920, "height": 1080},
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/130.0.0.0 Safari/537.36"
-            ),
-        )
+        browser, context = build_context(p, headless=config.HEADLESS)
         page = open_dashboard(context)
-        given, visited, scrolls, kudoed_seen = give_kudos(context, page)
+        given, tried, scrolls, buttons_seen = give_kudos(context, page)
         browser.close()
 
     print(
-        f"[strava-kudos] gave kudos to {given} (of {visited} visited; "
-        f"{scrolls} scrolls, {kudoed_seen} already-kudo'd in feed) "
+        f"[strava-kudos] gave kudos to {given} (of {tried} tried; "
+        f"{scrolls} scrolls, {buttons_seen} kudos buttons in feed) "
         f"at {datetime.now().isoformat(timespec='seconds')}"
     )
     return 0

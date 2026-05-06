@@ -7,15 +7,14 @@ A small Python bot that gives kudos to every activity in your Strava following-f
 Once a day (or on whatever schedule you pick), the bot:
 
 1. Launches headless Chromium with your previously-saved Strava session.
-2. Loads `strava.com/dashboard` and scrolls the feed to collect activity URLs.
-3. Visits each activity's detail page and clicks "Give kudos" if present.
+2. Loads `strava.com/dashboard` and scrolls the feed to collect activity IDs.
+3. Fires direct `POST /feed/activity/{id}/kudo` requests against Strava's
+   internal endpoint, reusing the browser's session cookies + CSRF token. No
+   per-activity page loads, no DOM clicks.
 4. Prints a one-line summary and exits.
 
-Why visit each detail page instead of clicking in the feed? The feed's kudos
-button updates the DOM optimistically but doesn't reliably commit the kudos
-to Strava's backend — many feed clicks "succeed" visually but never persist.
-The detail-page button works every time, at the cost of a few extra
-navigations per run.
+A typical run handles ~50 activities in seconds. Scrolling the feed is the
+slow part; the kudos round-trips themselves are tiny HTTP calls.
 
 ## Why this approach
 
@@ -154,18 +153,17 @@ All config is environment variables, optionally loaded from a `.env` file in the
 | `STRAVA_AUTH_FILE` | `./auth.json` | Path to the saved session-state JSON |
 | `STRAVA_DASHBOARD_URL` | `https://www.strava.com/dashboard` | Page to scroll for kudos |
 | `STRAVA_LOGIN_URL` | `https://www.strava.com/login` | Page `auth.py` opens |
-| `STRAVA_KUDOED_LIMIT` | `50` | Stop once this many already-kudo'd activities are on the page |
+| `STRAVA_FEED_DEPTH` | `50` | Stop scrolling once this many kudos buttons (≈ activity cards) are visible |
 | `STRAVA_MAX_SCROLLS` | `30` | Safety cap on scroll iterations |
 | `STRAVA_SCROLL_DELAY_MS` | `2500` | Wait after each scroll for lazy-load |
 | `STRAVA_SCROLL_PATIENCE` | `3` | Consecutive no-growth scrolls before declaring feed exhausted |
-| `STRAVA_KUDOS_DELAY_MS` | `400` | Wait between kudos clicks (be polite) |
+| `STRAVA_KUDOS_DELAY_MS` | `250` | Wait between kudos POSTs (be polite) |
 | `STRAVA_HEADLESS` | `true` | Set `false` to watch the bot run |
-| `STRAVA_FEED_KUDOED_SELECTOR` | `button[data-testid='kudos_button']` | Already-kudo'd marker in the feed (drives stop signal) |
-| `STRAVA_DETAIL_KUDOS_SELECTOR` | `button[data-testid='give-kudos-btn']` | The button on an activity detail page |
+| `STRAVA_KUDOS_BUTTON_SELECTOR` | `button[data-testid='kudos_button']` | Feed kudos button — counted to drive the `FEED_DEPTH` stop signal |
 
 ## Refreshing auth
 
-Strava sessions are long-lived (typically months) but not infinite. When `kudos.py` starts logging `gave kudos to 0 activities` for several days in a row, the cookie probably expired. Fix:
+Strava sessions are long-lived (typically months) but not infinite. When `kudos.py` starts logging `gave kudos to 0` for several days in a row, the cookie probably expired. Fix:
 
 1. On a desktop, run `python auth.py` again, sign in.
 2. Copy the new `auth.json` to wherever the bot runs (e.g. `scp auth.json pi@host:~/strava-kudos-bot/`).
@@ -181,7 +179,7 @@ Strava sessions are long-lived (typically months) but not infinite. When `kudos.
 
 ## Disclaimer
 
-This bot is intended for **personal use at human-scale rates** — your own feed, once a day, with delays between clicks. Don't run multiple parallel instances. Don't use it on accounts that aren't yours. Be a respectful citizen of the platform; if Strava ever signals they don't want this kind of automation, stop.
+This bot is intended for **personal use at human-scale rates** — your own feed, once a day, with delays between requests. Don't run multiple parallel instances. Don't use it on accounts that aren't yours. Be a respectful citizen of the platform; if Strava ever signals they don't want this kind of automation, stop.
 
 ## License
 
