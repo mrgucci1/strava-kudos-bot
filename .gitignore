@@ -1,0 +1,12 @@
+auth.json
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+logs/
+*.log
+node_modules/
+.DS_Store
+ecosystem.config.js
