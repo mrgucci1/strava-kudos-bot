@@ -1,6 +1,6 @@
 # strava-kudos-bot
 
-A small Python bot that gives kudos to every activity in your Strava following-feed on a schedule. Drives a real headless Chromium via Playwright, replays your saved login cookies — no Strava API key, no Google sign-in, no fragile credential storage.
+A small Python bot that gives kudos to every activity in your Strava following-feed on a schedule. Drives a real headless Chromium via Playwright, replays your saved login cookies
 
 ## What it does
 
@@ -15,13 +15,6 @@ Once a day (or on whatever schedule you pick), the bot:
 
 A typical run handles ~50 activities in seconds. Scrolling the feed is the
 slow part; the kudos round-trips themselves are tiny HTTP calls.
-
-## Why this approach
-
-Strava's public REST API does not expose a kudos endpoint and does not expose a "following feed" endpoint to third-party apps. So driving the website itself is the only path. We use Playwright with replayed cookies, which means:
-
-- **No password lives in code or env vars** — only a session-state JSON file.
-- **Works with any Strava login method** — email+password, one-time magic-link codes, Google, Apple. You sign in manually once in a real browser; the cookies do the rest.
 
 ## How it works
 
@@ -65,9 +58,7 @@ Open Strava on your phone or in another browser to verify the kudos appear on th
 
 Pick whichever fits your setup.
 
-### Option A — Linux / Raspberry Pi with PM2 (recommended for always-on hosts)
-
-If you're already running Node bots under PM2, this drops in cleanly:
+### Option A — Linux / Raspberry Pi with PM2
 
 ```bash
 cp ecosystem.config.example.js ecosystem.config.js
@@ -184,7 +175,3 @@ This bot is intended for **personal use at human-scale rates** — your own feed
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-## Contributing
-
-It's a small project — selector updates, new scheduler walkthroughs, and bug fixes are all welcome. Open a PR.
